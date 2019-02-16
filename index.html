@@ -170,7 +170,8 @@
 
         pause = false;
         input_button_pause.innerHTML = "PAUSE";
-
+        
+        sound_click.play();
     }, false);
 
     button_pause.addEventListener("click", function() {
@@ -188,6 +189,8 @@
         }
 
         document.documentElement.style.setProperty("--accent", color_default);
+
+        sound_click.play();
     }, false);
 
     // Helper
@@ -237,6 +240,11 @@
     input_button_start = document.getElementById("button_start");
     input_button_pause = document.getElementById("button_pause");
 
+    sound_click = new Audio("click.wav");
+    sound_work = new Audio("work.wav");
+    sound_short = new Audio("short.wav");
+    sound_long = new Audio("long.wav");
+
     var color_work  = "#b22";
     var color_short = "#159";
     var color_long  = "#94a";
@@ -275,10 +283,13 @@
         if (state.timer == work) {
             state.timer = (state.round == 1) ? long : short
             console.log("Switching to break at round " + state.round);
+            
+            (state.round == 1) ? sound_long.play() : sound_short.play();
         } else {
             state.timer = work;
             state.round = (state.round == 1) ? rounds : state.round - 1;
             console.log("Switching to work at round " + state.round);
+            sound_work.play();
         }
 
         reset_time(state.time);
