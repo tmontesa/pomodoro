@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<link href="https://fonts.googleapis.com/css?family=Overpass+Mono:700" rel="stylesheet">
+
+<head>
+    <style>
+        :root {
+            --accent: #444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: 'Overpass Mono', monospace;
+            font-weight: 700;
+            font-size: 14px;
+            color: #222;
+        }
+
+        body {
+            background: #222;
+        }
+
+        #progress {
+            background: var(--accent);
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            z-index: -1;
+
+            transition: width 1s, background 1s;
+        }
+
+        #control {
+            width: 100vw;
+            position: fixed;
+            background: rgba(34, 34, 34, 0.75);
+        }
+
+        #control * {
+            color: #eee;
+        }
+
+        #control #container {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        #control #container * {
+            flex-basis: 100%;
+        }
+
+        #inputs {
+            text-align: left;
+        }
+
+
+        label {
+            display: inline-block;
+            width: 50px;
+            text-align: right;
+        }
+
+        input[type="number"] {
+            width: 50px;
+            border: none;
+            background: transparent;
+            border-bottom: 1px solid #eee;
+            margin-left: 10px;
+        }
+
+        #times {
+            text-align: center;
+        }
+
+        #elapsed {
+            margin-bottom: -20px;
+            font-size: 72px;
+        }
+
+        #info {
+            text-align: right;
+        }
+
+        #timer {
+            font-size: 24px;
+            margin-bottom: -5px;
+        }
+
+        button {
+            background: transparent;
+            border: none;
+            width: 80px;
+            background: var(--accent);
+            color: #eee;
+            margin-top: 15px;
+            padding: 5px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+    <div id="progress"></div>
+
+    <div id="control"><div id="container">
+        
+        <div id="inputs">
+            <label for="rounds">Rounds</label>
+            <input type="number" id="rounds" value="3">
+            <br>
+        
+            <label for="work_time">Work</label>
+            <input type="number" id="work_minutes" value="20"> min
+            <input type="number" id="work_seconds" value="0"> sec
+            <br>
+        
+            <label for="short_time">Short</label>
+            <input type="number" id="short_minutes" value="10"> min
+            <input type="number" id="short_seconds" value="0"> sec
+            <br>
+        
+            <label for="long_time">Long</label>
+            <input type="number" id="long_minutes" value="20"> min
+            <input type="number" id="long_seconds" value="0"> sec
+        </div>
+
+        <div id="times">
+            <div id="elapsed">00:00</div>
+            <div id="time">00:00</div>
+        </div>
+        
+        <div id="info">
+            <div id="timer">Stopped</div>
+            <div id="round">Round 0/0</div>
+            <button id="button_start">START</button> <button id="button_pause">PAUSE</button>
+        </div>
+
+    </div></div>
+    
+</body>
+
+<script>
+
+    // Actions
+
+    button_start.addEventListener("click", function() {
+
+        rounds          = Number(input_rounds.value);
+        work.minute     = Number(input_work_minutes.value);
+        work.second     = Number(input_work_seconds.value);
+        short.minute    = Number(input_short_minutes.value);
+        short.second    = Number(input_short_seconds.value);
+        long.minute     = Number(input_long_minutes.value);
+        long.second     = Number(input_long_seconds.value);
+
+        set_seconds(work);
+        set_seconds(short);
+        set_seconds(long);
+
+        state.timer = work;
+        state.round = rounds;
+        reset_time(state.time);
+        state.start = Date.now();
+
+        console.log(work);
+        console.log(short);
+        console.log(long);
+
+        pause = false;
+        input_button_pause.innerHTML = "PAUSE";
+
+    }, false);
+
+    button_pause.addEventListener("click", function() {
+        input_button_pause.innerHTML = (pause) ?  "PAUSE" : "RESUME";
+
+        pause = !pause;
+        console.log(pause);
+
+        if (pause) {
+            pause_start = Date.now();
+            elem_timer.innerHTML = "Paused";
+        } else {
+            state.start +=  Date.now() - pause_start;
+            pause_start = 0;
+        }
+
+        document.documentElement.style.setProperty("--accent", color_default);
+    }, false);
+
+    // Helper
+
+    function reset_time(time) {
+        time.minute = 0;
+        time.second = 0;
+        time.seconds = 0;
+    }
+
+    function pad(n) {
+        return (n < 10) ? ("0" + n) : n;
+    }
+
+    function set_seconds(time) {
+        time.seconds = (time.minute * 60) + time.second;
+        
+    }
+
+    // Object
+
+    function Time(minute, second) {
+        this.minute = minute;
+        this.second = second;
+        this.seconds = (minute * 60) + second;
+    }
+
+    // Vars
+
+    var pause = true;
+    var pause_start = 0;
+
+    elem_time = document.getElementById("time");
+    elem_elapsed = document.getElementById("elapsed");
+    elem_progress = document.getElementById("progress");
+    elem_timer = document.getElementById("timer");
+    elem_round = document.getElementById("round");
+
+    input_rounds = document.getElementById("rounds");
+    input_work_minutes = document.getElementById("work_minutes");
+    input_work_seconds = document.getElementById("work_seconds");
+    input_short_minutes = document.getElementById("short_minutes");
+    input_short_seconds = document.getElementById("short_seconds");
+    input_long_minutes = document.getElementById("long_minutes");
+    input_long_seconds = document.getElementById("long_seconds");
+
+    input_button_start = document.getElementById("button_start");
+    input_button_pause = document.getElementById("button_pause");
+
+    var color_work  = "#b22";
+    var color_short = "#159";
+    var color_long  = "#94a";
+    var color_default = "#444";
+
+    var rounds = 3;
+    var work = new Time(0, 3);
+    var short = new Time(0, 5);
+    var long = new Time(0, 10);
+
+    var state = {
+        timer: work,
+        round: 0,
+        time: new Time(0, 0),
+        elapsed: new Time(0, 0),
+        start: 0
+    }
+
+    // Update
+
+    function update_time() {
+        state.time.seconds = Math.floor((Date.now() - state.start) / 1000);
+        state.time.minute = Math.floor(state.time.seconds / 60);
+        state.time.second = state.time.seconds % 60;
+
+        state.elapsed.seconds = state.timer.seconds - state.time.seconds;
+        state.elapsed.minute = Math.floor(state.elapsed.seconds / 60);
+        state.elapsed.second = state.elapsed.seconds % 60;
+    }
+
+    function update_rounds() {
+        if (state.time.seconds < state.timer.seconds) {
+            return;
+        }
+
+        if (state.timer == work) {
+            state.timer = (state.round == 1) ? long : short
+            console.log("Switching to break at round " + state.round);
+        } else {
+            state.timer = work;
+            state.round = (state.round == 1) ? rounds : state.round - 1;
+            console.log("Switching to work at round " + state.round);
+        }
+
+        reset_time(state.time);
+        state.start = Date.now();
+    }
+
+    function update_color() {
+        if (state.timer == work) {
+            document.documentElement.style.setProperty("--accent", color_work);
+        } else if (state.timer == short) {
+            document.documentElement.style.setProperty("--accent", color_short);
+        } else if (state.timer == long) {
+            document.documentElement.style.setProperty("--accent", color_long);
+        } else {
+            document.documentElement.style.setProperty("--accent", color_default);
+        }
+        
+    }
+
+    // Draw
+
+    function draw_time() {
+        elem_time.innerHTML = pad(state.time.minute) + ":" + pad(state.time.second);
+        elem_elapsed.innerHTML = pad(state.elapsed.minute) + ":" + pad(state.elapsed.second);
+    }
+
+    function draw_rounds() {
+        if (state.timer == work) {
+            elem_timer.innerHTML = "Work";
+        } else if (state.timer == short) {
+            elem_timer.innerHTML = "Short Break";
+        } else if (state.timer == long) {
+            elem_timer.innerHTML = "Long Break";
+        } else {
+            elem_timer.innerHTML = "Error";
+        }
+
+        elem_round.innerHTML = "Round " + state.round + "/" + rounds;
+    }
+
+    function draw_progress() {
+        elem_progress.style.width = (100 - ((state.time.seconds) * 100 / state.timer.seconds)) + "vw";
+    }
+
+    // Main
+
+    function update() {
+        update_time();
+        update_rounds();
+        update_color();
+    }
+
+    function draw() {
+        draw_time();
+        draw_progress();
+        draw_rounds();
+    }
+
+    function main() {
+        if (state.round != 0 && !pause) {
+            update();
+            draw();
+        }
+    }
+
+    setInterval(main, 50);
+    
+</script>
+
+<script>
+    window.onbeforeunload = function (e) {
+        return 'Sure?';
+    };
+</script>
