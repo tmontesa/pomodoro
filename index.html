@@ -17,7 +17,7 @@
         }
 
         body {
-            background: #222;
+            background: #000;
         }
 
         #progress {
@@ -33,7 +33,7 @@
         #control {
             width: 100vw;
             position: fixed;
-            background: rgba(34, 34, 34, 0.75);
+            background: rgba(0, 0, 0, 0.5);
         }
 
         #control * {
@@ -58,43 +58,70 @@
         label {
             display: inline-block;
             width: 50px;
-            text-align: right;
+            
         }
 
         input[type="number"] {
-            width: 50px;
+            width: 40px;
             border: none;
             background: transparent;
             border-bottom: 1px solid #eee;
-            margin-left: 10px;
+            margin-bottom: 2px;
+            margin-left: 20px;
         }
 
         #times {
             text-align: center;
         }
 
-        #elapsed {
+        #time_remaining {
             margin-bottom: -20px;
             font-size: 72px;
         }
 
         #info {
             text-align: right;
+            font-size: 0; /* Avoids spaces between buttons */
         }
 
-        #timer {
+        #mode {
             font-size: 24px;
-            margin-bottom: -5px;
+        }
+
+        #round {
+            font-size: 14px;
+            margin-bottom: 10px;
         }
 
         button {
             background: transparent;
             border: none;
-            width: 80px;
+            width: 85px;
             background: var(--accent);
             color: #eee;
-            margin-top: 15px;
-            padding: 5px;
+            margin: 0;
+            
+            padding: 5px 0;
+            overflow: hidden;
+            display: inline-block;
+            font-size: 14px;
+
+            transition: width 1s, padding 1s, opacity 1s;
+        }
+
+        #button_pause {
+            width: 0;
+            margin: 0;
+        }
+
+        #stars {
+            position: fixed;
+            bottom: 20px;
+            width: 100vw;
+            text-align: center;
+            color: #eee;
+            opacity: 0.5;
+            font-size: 24px;
         }
 
     </style>
@@ -127,18 +154,19 @@
         </div>
 
         <div id="times">
-            <div id="elapsed">00:00</div>
-            <div id="time">00:00</div>
+            <div id="time_remaining">00:00</div>
+            <div id="time_elapsed">00:00</div>
         </div>
         
         <div id="info">
-            <div id="timer">Stopped</div>
-            <div id="round">Round 0/0</div>
-            <button id="button_start">START</button> <button id="button_pause">PAUSE</button>
+            <div id="mode">Paused</div><div id="round">Round 0/0</div>
+            <button id="button_start">Start</button> <button id="button_pause">Pause</button>
         </div>
 
     </div></div>
     
+    <div id="stars"></div>
+
 </body>
 
 <script>
@@ -159,9 +187,10 @@
         set_seconds(short);
         set_seconds(long);
 
-        state.timer = work;
+        state.mode = work;
         state.round = rounds;
-        reset_time(state.time);
+        reset_time(state.time_remaining);
+        reset_time(state.time_elapsed);
         state.start = Date.now();
 
         console.log(work);
@@ -169,27 +198,31 @@
         console.log(long);
 
         pause = false;
-        input_button_pause.innerHTML = "PAUSE";
+        input_button_pause.innerHTML = "Pause";
+        input_button_start.innerHTML = "Restart";
         
+        change = true;
         sound_click.play();
     }, false);
 
     button_pause.addEventListener("click", function() {
-        input_button_pause.innerHTML = (pause) ?  "PAUSE" : "RESUME";
+        input_button_pause.innerHTML = (pause) ?  "Pause" : "Resume";
 
         pause = !pause;
         console.log(pause);
 
         if (pause) {
             pause_start = Date.now();
-            elem_timer.innerHTML = "Paused";
+            elem_mode.innerHTML = "Paused";
         } else {
             state.start +=  Date.now() - pause_start;
             pause_start = 0;
         }
 
+        
         document.documentElement.style.setProperty("--accent", color_default);
-
+        change = true;
+        draw_buttons();
         sound_click.play();
     }, false);
 
@@ -207,15 +240,15 @@
 
     function set_seconds(time) {
         time.seconds = (time.minute * 60) + time.second;
-        
     }
 
     // Object
 
-    function Time(minute, second) {
+    function Time(minute, second, name) {
         this.minute = minute;
         this.second = second;
         this.seconds = (minute * 60) + second;
+        this.name = name;
     }
 
     // Vars
@@ -223,27 +256,31 @@
     var pause = true;
     var pause_start = 0;
 
-    elem_time = document.getElementById("time");
-    elem_elapsed = document.getElementById("elapsed");
-    elem_progress = document.getElementById("progress");
-    elem_timer = document.getElementById("timer");
-    elem_round = document.getElementById("round");
+    var elem_time_remaining = document.getElementById("time_remaining");
+    var elem_time_elapsed = document.getElementById("time_elapsed");
+    var elem_progress = document.getElementById("progress");
+    var elem_mode = document.getElementById("mode");
+    var elem_round = document.getElementById("round");
+    var elem_stars = document.getElementById("stars");
 
-    input_rounds = document.getElementById("rounds");
-    input_work_minutes = document.getElementById("work_minutes");
-    input_work_seconds = document.getElementById("work_seconds");
-    input_short_minutes = document.getElementById("short_minutes");
-    input_short_seconds = document.getElementById("short_seconds");
-    input_long_minutes = document.getElementById("long_minutes");
-    input_long_seconds = document.getElementById("long_seconds");
+    var input_rounds = document.getElementById("rounds");
+    var input_work_minutes = document.getElementById("work_minutes");
+    var input_work_seconds = document.getElementById("work_seconds");
+    var input_short_minutes = document.getElementById("short_minutes");
+    var input_short_seconds = document.getElementById("short_seconds");
+    var input_long_minutes = document.getElementById("long_minutes");
+    var input_long_seconds = document.getElementById("long_seconds");
 
-    input_button_start = document.getElementById("button_start");
-    input_button_pause = document.getElementById("button_pause");
+    var input_button_start = document.getElementById("button_start");
+    var input_button_pause = document.getElementById("button_pause");
+    var button_width = 85;
+    var button_padding = 5;
+    var button_margin = 10;
 
-    sound_click = new Audio("click.wav");
-    sound_work = new Audio("work.wav");
-    sound_short = new Audio("short.wav");
-    sound_long = new Audio("long.wav");
+    var sound_click = new Audio("click.wav");
+    var sound_work = new Audio("work.mp3");
+    var sound_short = new Audio("short.mp3");
+    var sound_long = new Audio("long.mp3");
 
     var color_work  = "#b22";
     var color_short = "#159";
@@ -251,87 +288,106 @@
     var color_default = "#444";
 
     var rounds = 3;
-    var work = new Time(0, 3);
-    var short = new Time(0, 5);
-    var long = new Time(0, 10);
+    var work = new Time(0, 3, "Work");
+    var short = new Time(0, 5, "Short Break");
+    var long = new Time(0, 10, "Long Break");
 
     var state = {
-        timer: work,
+        mode: work,
         round: 0,
-        time: new Time(0, 0),
-        elapsed: new Time(0, 0),
+        time_elapsed: new Time(0, 0, "Elapsed"),
+        time_remaining: new Time(0, 0, "Remaining"),
         start: 0
     }
+
+    var change = false;
 
     // Update
 
     function update_time() {
-        state.time.seconds = Math.floor((Date.now() - state.start) / 1000);
-        state.time.minute = Math.floor(state.time.seconds / 60);
-        state.time.second = state.time.seconds % 60;
+        state.time_elapsed.seconds = Math.floor((Date.now() - state.start) / 1000);
+        state.time_elapsed.minute = Math.floor(state.time_elapsed.seconds / 60);
+        state.time_elapsed.second = state.time_elapsed.seconds % 60;
 
-        state.elapsed.seconds = state.timer.seconds - state.time.seconds;
-        state.elapsed.minute = Math.floor(state.elapsed.seconds / 60);
-        state.elapsed.second = state.elapsed.seconds % 60;
+        state.time_remaining.seconds = state.mode.seconds - state.time_elapsed.seconds;
+        state.time_remaining.minute = Math.floor(state.time_remaining.seconds / 60);
+        state.time_remaining.second = state.time_remaining.seconds % 60;
     }
 
     function update_rounds() {
-        if (state.time.seconds < state.timer.seconds) {
+        if (state.time_elapsed.seconds < state.mode.seconds) {
             return;
         }
 
-        if (state.timer == work) {
-            state.timer = (state.round == 1) ? long : short
-            console.log("Switching to break at round " + state.round);
+        change = true;
+
+        if (state.mode == work) {
+            state.mode = (state.round == 1) ? long : short;
             
             (state.round == 1) ? sound_long.play() : sound_short.play();
         } else {
-            state.timer = work;
+            state.mode = work;
             state.round = (state.round == 1) ? rounds : state.round - 1;
-            console.log("Switching to work at round " + state.round);
             sound_work.play();
+
+            elem_stars.innerHTML += (state.round == rounds) ? "★" : "";
         }
 
-        reset_time(state.time);
+        reset_time(state.time_remaining);
+        reset_time(state.time_elapsed);
         state.start = Date.now();
     }
 
     function update_color() {
-        if (state.timer == work) {
+        if (!change) { return; }
+
+        if (state.mode == work) {
             document.documentElement.style.setProperty("--accent", color_work);
-        } else if (state.timer == short) {
+        } else if (state.mode == short) {
             document.documentElement.style.setProperty("--accent", color_short);
-        } else if (state.timer == long) {
+        } else if (state.mode == long) {
             document.documentElement.style.setProperty("--accent", color_long);
         } else {
             document.documentElement.style.setProperty("--accent", color_default);
         }
-        
     }
 
     // Draw
 
     function draw_time() {
-        elem_time.innerHTML = pad(state.time.minute) + ":" + pad(state.time.second);
-        elem_elapsed.innerHTML = pad(state.elapsed.minute) + ":" + pad(state.elapsed.second);
+        elem_time_elapsed.innerHTML = pad(state.time_elapsed.minute) + ":" + pad(state.time_elapsed.second);
+        elem_time_remaining.innerHTML = pad(state.time_remaining.minute) + ":" + pad(state.time_remaining.second);
     }
 
     function draw_rounds() {
-        if (state.timer == work) {
-            elem_timer.innerHTML = "Work";
-        } else if (state.timer == short) {
-            elem_timer.innerHTML = "Short Break";
-        } else if (state.timer == long) {
-            elem_timer.innerHTML = "Long Break";
-        } else {
-            elem_timer.innerHTML = "Error";
-        }
+        if (!change) { return; }
 
+        elem_mode.innerHTML = state.mode.name;
         elem_round.innerHTML = "Round " + state.round + "/" + rounds;
     }
 
     function draw_progress() {
-        elem_progress.style.width = (100 - ((state.time.seconds) * 100 / state.timer.seconds)) + "vw";
+        elem_progress.style.width = (100 - ((state.time_elapsed.seconds) * 100 / (state.mode.seconds - 1))) + "vw";
+    }
+
+    function draw_buttons() {
+        if (!change) { return; }
+
+        if (!pause) {
+            input_button_pause.style.width = button_width + "px";
+            input_button_pause.style.marginLeft = button_margin + "px";
+            input_button_pause.style.opacity = 1;
+
+            input_button_start.style.width = 0 + "px";
+            input_button_start.style.marginLeft = 0 + "px";
+            input_button_start.style.opacity = 0;
+
+        } else {
+
+            input_button_start.style.width = button_width + "px";
+            input_button_start.style.marginLeft = button_margin + "px";
+            input_button_start.style.opacity = 1;
+        }
     }
 
     // Main
@@ -346,12 +402,14 @@
         draw_time();
         draw_progress();
         draw_rounds();
+        draw_buttons();
     }
 
     function main() {
         if (state.round != 0 && !pause) {
             update();
             draw();
+            change = false;
         }
     }
 
